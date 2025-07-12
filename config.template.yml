@@ -1,0 +1,14 @@
+port: ${PORT}
+
+db:
+  type: postgres
+  host: ${DB_HOST}
+  port: ${DB_PORT}
+  user: ${DB_USER}
+  pass: ${DB_PASS}
+  db:   ${DB_NAME}
+  ssl:  false
+
+bindIP: 0.0.0.0
+logLevel: info
+dataPath: ./data

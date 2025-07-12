@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB:     ${DB_NAME}
+      POSTGRES_USER:   ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  wiki:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DATA_PATH: ${DATA_PATH:-/usr/src/wiki/data}
+    image: "${DOCKER_HUB_USERNAME}/wikijs:${IMAGE_TAG:-latest}"
+    restart: unless-stopped
+    depends_on:
+      - db
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./custom:/usr/src/wiki/custom
+      - wiki-data:${DATA_PATH:-/usr/src/wiki/data}
+
+  nginx:
+    image: nginx:latest
+    restart: unless-stopped
+    depends_on:
+      - wiki
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl/fullchain.pem:/etc/letsencrypt/live/${DOMAIN}/fullchain.pem:ro
+      - ./ssl/privkey.pem:/etc/letsencrypt/live/${DOMAIN}/privkey.pem:ro
+
+volumes:
+  db-data:
+  wiki-data:
