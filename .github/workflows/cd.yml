@@ -1,0 +1,44 @@
+name: CD Deploy to GCP
+
+on:
+  push:
+    branches: [ dev ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-test-and-push
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Prepare SSL on VM
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          user: ${{ secrets.SSH_USER }}
+          script: |
+            set -e
+            mkdir -p ~/semantic_gap/ssl
+            echo "${{ secrets.SSL_CERT_B64 }}" | base64 -d > ~/semantic_gap/ssl/fullchain.pem
+            echo "${{ secrets.SSL_KEY_B64 }}"  | base64 -d > ~/semantic_gap/ssl/privkey.pem
+
+      - name: Deploy to GCP VM
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          user: ${{ secrets.SSH_USER }}
+          script: |
+            set -e
+            echo "${{ secrets.DOCKER_HUB_TOKEN }}" \
+              | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+            cd ~/semantic_gap
+            git pull origin main
+            docker-compose pull
+            docker-compose up -d
