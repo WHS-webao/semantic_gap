@@ -1,4 +1,3 @@
-# .github/workflows/cd.yml
 name: CD Deploy to GCP
 
 on:
@@ -10,44 +9,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup SSH agent
+      - name: Setup SSH key in agent
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Prepare SSL on VM
+      - name: Copy SSL certs to VM
         uses: appleboy/ssh-action@v0.1.7
         with:
-          host: ${{ secrets.SSH_HOST }}
-          user: ${{ secrets.SSH_USER }}
+          host:     ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key:      ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            set -e
             mkdir -p ~/semantic_gap/ssl
             echo "${{ secrets.SSL_CERT_B64 }}" | base64 -d > ~/semantic_gap/ssl/fullchain.pem
             echo "${{ secrets.SSL_KEY_B64 }}"  | base64 -d > ~/semantic_gap/ssl/privkey.pem
-      - name: Deploy to GCP VM
+
+      - name: Deploy app on VM
         uses: appleboy/ssh-action@v0.1.7
         with:
-          host: ${{ secrets.SSH_HOST }}
-          user: ${{ secrets.SSH_USER }}
+          host:     ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key:      ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            #!/bin/sh
             set -e
-            # Docker Hub 로그인
-            echo "${{ secrets.DOCKER_HUB_TOKEN }}" \
-              | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
-
-            # 배포 디렉터리로 이동
+            # log into Docker Hub
+            echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
             cd ~/semantic_gap
-
-            # 코드 업데이트
             git pull origin main
-
-            # 새 이미지 당기고 재시작
             docker-compose pull
             docker-compose up -d
-
-            # nginx 재시작
             sudo nginx -s reload
