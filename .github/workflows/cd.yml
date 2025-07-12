@@ -41,19 +41,25 @@ jobs:
                 git reset --hard origin/main
               else
                 rm -rf ./*
-                git clone https://github.com/${{ github.repository }} .
+                git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} .
               fi
             else
-              git clone https://github.com/${{ github.repository }} semantic_gap
+              git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} semantic_gap
               cd semantic_gap
             fi
 
-            # Docker Hub login
-            echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+            # Docker Hub login (with sudo)
+            echo "${{ secrets.DOCKER_HUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
-            # Deploy containers
-            docker-compose pull
-            docker-compose up -d
+            # Generate .env for docker-compose
+            cat > .env <<EOF
+            DOMAIN=semanticgap.mjsec.kr
+            DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
+            IMAGE_TAG=latest
+            EOF
+
+            # Deploy containers (with sudo)
+            sudo docker-compose pull
+            sudo docker-compose up -d
 
             # Reload nginx
-            sudo nginx -s reload
