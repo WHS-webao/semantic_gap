@@ -1,0 +1,80 @@
+# File: .github/workflows/ci.yml
+name: CI Build, Test & Push via Docker Compose
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-test-and-push:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_TOKEN:  ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      DB_USER:            ${{ secrets.DB_USER }}
+      DB_PASS:            ${{ secrets.DB_PASSWORD }}
+      DB_NAME:            ${{ secrets.DB_NAME }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache Yarn dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/yarn
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Prepare .env for CI (SSL off)
+        run: |
+          cat > .env << 'EOF'
+          PORT=3000
+          BIND_IP=0.0.0.0
+
+          DB_TYPE=postgres
+          DB_HOST=db
+          DB_PORT=5432
+          DB_USER=${DB_USER}
+          DB_PASS=${DB_PASS}
+          DB_NAME=${DB_NAME}
+
+          SSL_ENABLED=false
+          DATA_PATH=/usr/src/wiki/data
+          LOG_LEVEL=error
+          EOF
+
+      - name: Build & up services (CI)
+        run: |
+          docker-compose -f docker-compose.ci.yml build
+          docker-compose -f docker-compose.ci.yml up -d
+
+      - name: Wait for Postgres
+        run: |
+          until docker-compose -f docker-compose.ci.yml exec db pg_isready -U ${DB_USER}; do
+            echo "Waiting for Postgres…"
+            sleep 2
+          done
+
+      - name: Health-check Wiki.js
+        run: |
+          curl --fail http://localhost:3000 \
+            || (docker-compose -f docker-compose.ci.yml logs wiki && exit 1)
+
+      - name: Tear down services
+        run: docker-compose -f docker-compose.ci.yml down --volumes
+
+      - name: Docker Hub login
+        run: |
+          echo "${{ env.DOCKER_HUB_TOKEN }}" \
+            | docker login -u "${{ env.DOCKER_HUB_USERNAME }}" --password-stdin
+
+      - name: Tag & push Wiki.js image
+        run: |
+          IMG=$(docker-compose -f docker-compose.ci.yml images -q wiki)
+          docker tag $IMG ${{ env.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }}
+          docker tag $IMG ${{ env.DOCKER_HUB_USERNAME }}/wikijs:latest
+          docker push ${{ env.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }}
+          docker push ${{ env.DOCKER_HUB_USERNAME }}/wikijs:latest

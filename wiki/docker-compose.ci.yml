@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:17-alpine
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+  wiki:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
