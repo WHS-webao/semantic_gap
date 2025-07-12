@@ -4,8 +4,6 @@ services:
     env_file:
       - .env
     environment:
-      # .env 의 DB_USER/DB_PASS/DB_NAME 값을
-      # Postgres 초기화 변수로 매핑
       POSTGRES_USER:     ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB:       ${DB_NAME}
@@ -19,6 +17,8 @@ services:
     build: .
     env_file:
       - .env
+    volumes:
+      - ./data:/usr/src/wiki/data
     ports:
       - "3000:3000"
     depends_on:
