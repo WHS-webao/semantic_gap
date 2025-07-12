@@ -1,11 +1,12 @@
-# File: .github/workflows/ci.yml
 name: CI Build, Test & Push via Docker Compose
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - dev
-      - main
   workflow_dispatch:
 
 jobs:
@@ -48,12 +49,12 @@ jobs:
 
       - name: Build & up services (CI)
         run: |
-          docker-compose -f docker-compose.ci.yml build
-          docker-compose -f docker-compose.ci.yml up -d
+          docker compose -f docker-compose.ci.yml build
+          docker compose -f docker-compose.ci.yml up -d
 
       - name: Wait for Postgres
         run: |
-          until docker-compose -f docker-compose.ci.yml exec db pg_isready -U ${DB_USER}; do
+          until docker compose -f docker-compose.ci.yml exec db pg_isready -U ${DB_USER}; do
             echo "Waiting for Postgres…"
             sleep 2
           done
@@ -61,10 +62,10 @@ jobs:
       - name: Health-check Wiki.js
         run: |
           curl --fail http://localhost:3000 \
-            || (docker-compose -f docker-compose.ci.yml logs wiki && exit 1)
+            || (docker compose -f docker-compose.ci.yml logs wiki && exit 1)
 
       - name: Tear down services
-        run: docker-compose -f docker-compose.ci.yml down --volumes
+        run: docker compose -f docker-compose.ci.yml down --volumes
 
       - name: Docker Hub login
         run: |
@@ -73,7 +74,7 @@ jobs:
 
       - name: Tag & push Wiki.js image
         run: |
-          IMG=$(docker-compose -f docker-compose.ci.yml images -q wiki)
+          IMG=$(docker compose -f docker-compose.ci.yml images -q wiki)
           docker tag $IMG ${{ env.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }}
           docker tag $IMG ${{ env.DOCKER_HUB_USERNAME }}/wikijs:latest
           docker push ${{ env.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }}
