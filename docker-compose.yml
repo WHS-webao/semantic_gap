@@ -32,6 +32,7 @@ services:
   nginx:
     image: nginx:latest
     restart: unless-stopped
+    user: root
     depends_on:
       - wiki
     ports:
