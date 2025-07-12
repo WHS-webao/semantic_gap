@@ -1,11 +1,11 @@
-version: '3.8'
 services:
   db:
     image: postgres:17-alpine
     env_file:
       - .env
     environment:
-      # Compose substitution을 통해 CI env의 DB_* 값을 그대로 매핑
+      # .env 의 DB_USER/DB_PASS/DB_NAME 값을
+      # Postgres 초기화 변수로 매핑
       POSTGRES_USER:     ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB:       ${DB_NAME}
