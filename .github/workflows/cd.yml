@@ -33,7 +33,7 @@ jobs:
 
             cd ~
 
-            # Clone or update repository using the built-in GitHub token
+            # Clone or update repository using GITHUB_TOKEN
             if [ -d semantic_gap ]; then
               cd semantic_gap
               git fetch origin main
@@ -43,20 +43,25 @@ jobs:
               cd semantic_gap
             fi
 
-            # Docker Hub login
+            # Docker Hub login (sudo is passwordless per sudoers.d)
             echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" \
-              | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+              | sudo docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
             # Generate .env for docker-compose
             cat > .env <<EOF
             DOMAIN=semanticgap.mjsec.kr
             DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
             IMAGE_TAG=latest
+            DB_HOST=db
+            DB_PORT=5432
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASS=${{ secrets.DB_PASS }}
+            DB_NAME=${{ secrets.DB_NAME }}
             EOF
 
-            # Deploy containers
-            docker-compose pull
-            docker-compose up -d
+            # Deploy containers (with sudo)
+            sudo docker-compose pull
+            sudo docker-compose up -d
 
-            # Reload nginx (requires passwordless sudo)
+            # Reload nginx (also via sudo)
             sudo nginx -s reload
