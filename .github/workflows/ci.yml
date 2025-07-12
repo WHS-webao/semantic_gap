@@ -1,3 +1,4 @@
+# .github/workflows/ci.yml
 name: CI Build, Test & Push via Docker Compose
 
 on:
@@ -16,11 +17,12 @@ jobs:
       DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
       DOCKER_HUB_TOKEN:  ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       DB_USER:            ${{ secrets.DB_USER }}
-      DB_PASS:            ${{ secrets.DB_PASS }}
+      DB_PASS:            ${{ secrets.DB_PASSWORD }}
       DB_NAME:            ${{ secrets.DB_NAME }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Cache Yarn dependencies
         uses: actions/cache@v3
@@ -46,34 +48,29 @@ jobs:
           LOG_LEVEL=error
           EOF
 
-      - name: Build images
-        run: docker compose -f docker-compose.ci.yml build
-
-      - name: Start only DB
-        run: docker compose -f docker-compose.ci.yml up -d db
-
-      - name: Wait for Postgres health
+      - name: Build & start services
         run: |
-          until docker compose -f docker-compose.ci.yml exec db pg_isready -U ${DB_USER}; do
-            echo "Waiting for Postgres…"
-            sleep 2
-          done
+          docker compose -f docker-compose.ci.yml up -d --build
 
-      - name: Start Wiki.js
-        run: docker compose -f docker-compose.ci.yml up -d wiki
+      - name: Debug DB container status & logs
+        run: |
+          echo '=== docker ps ==='
+          docker compose -f docker-compose.ci.yml ps
+          echo ''
+          echo '=== DB logs ==='
+          docker compose -f docker-compose.ci.yml logs db
 
       - name: Health-check Wiki.js
         run: |
           curl --fail http://localhost:3000 \
             || (docker compose -f docker-compose.ci.yml logs wiki && exit 1)
 
-      - name: Tear down services
+      - name: Tear down
         run: docker compose -f docker-compose.ci.yml down --volumes
 
       - name: Docker Hub login
         run: |
-          echo "${{ env.DOCKER_HUB_TOKEN }}" \
-            | docker login -u "${{ env.DOCKER_HUB_USERNAME }}" --password-stdin
+          echo "${{ env.DOCKER_HUB_TOKEN }}" | docker login -u "${{ env.DOCKER_HUB_USERNAME }}" --password-stdin
 
       - name: Tag & push Wiki.js image
         run: |
