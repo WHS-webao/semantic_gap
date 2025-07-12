@@ -64,4 +64,4 @@ jobs:
             docker-compose up -d
 
             # Reload nginx (no sudo needed after adding user to docker group)
-            nginx -s reload
+            docker-compose exec nginx nginx -s reload
