@@ -20,8 +20,7 @@ jobs:
       DB_NAME:            ${{ secrets.DB_NAME }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Cache Yarn dependencies
         uses: actions/cache@v3
@@ -29,7 +28,7 @@ jobs:
           path: ~/.cache/yarn
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
 
-      - name: Prepare .env for CI (SSL off)
+      - name: Prepare .env
         run: |
           cat > .env << 'EOF'
           PORT=3000
@@ -47,17 +46,21 @@ jobs:
           LOG_LEVEL=error
           EOF
 
-      - name: Build & up services (CI)
-        run: |
-          docker compose -f docker-compose.ci.yml build
-          docker compose -f docker-compose.ci.yml up -d
+      - name: Build images
+        run: docker compose -f docker-compose.ci.yml build
 
-      - name: Wait for Postgres
+      - name: Start only DB
+        run: docker compose -f docker-compose.ci.yml up -d db
+
+      - name: Wait for Postgres health
         run: |
           until docker compose -f docker-compose.ci.yml exec db pg_isready -U ${DB_USER}; do
             echo "Waiting for Postgres…"
             sleep 2
           done
+
+      - name: Start Wiki.js
+        run: docker compose -f docker-compose.ci.yml up -d wiki
 
       - name: Health-check Wiki.js
         run: |
