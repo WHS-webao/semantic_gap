@@ -30,7 +30,7 @@ jobs:
 
       - name: Prepare .env
         run: |
-          cat > .env << 'EOF'
+          cat > .env <<EOF
           PORT=3000
           BIND_IP=0.0.0.0
 
