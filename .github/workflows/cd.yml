@@ -1,3 +1,4 @@
+# .github/workflows/cd.yml
 name: CD Deploy to GCP
 
 on:
@@ -9,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout (for context)
         uses: actions/checkout@v4
 
       - name: Setup SSH key in agent
@@ -17,30 +18,36 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Copy SSL certs to VM
+      - name: Deploy to GCP VM
         uses: appleboy/ssh-action@v0.1.7
         with:
           host:     ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key:      ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
+
+            # Prepare SSL directory and files
             mkdir -p ~/semantic_gap/ssl
             echo "${{ secrets.SSL_CERT_B64 }}" | base64 -d > ~/semantic_gap/ssl/fullchain.pem
             echo "${{ secrets.SSL_KEY_B64 }}"  | base64 -d > ~/semantic_gap/ssl/privkey.pem
 
-      - name: Deploy app on VM
-        uses: appleboy/ssh-action@v0.1.7
-        with:
-          host:     ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key:      ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            #!/bin/sh
-            set -e
-            # log into Docker Hub
+            cd ~
+            # Clone or update repository
+            if [ -d semantic_gap/.git ]; then
+              cd semantic_gap
+              git pull origin main
+            else
+              git clone https://github.com/${{ github.repository }} semantic_gap
+              cd semantic_gap
+            fi
+
+            # Docker Hub login
             echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
-            cd ~/semantic_gap
-            git pull origin main
+
+            # Deploy containers
             docker-compose pull
             docker-compose up -d
+
+            # Reload nginx
             sudo nginx -s reload
