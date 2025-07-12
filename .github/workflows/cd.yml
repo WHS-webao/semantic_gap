@@ -43,9 +43,9 @@ jobs:
               cd semantic_gap
             fi
 
-            # Docker Hub login (sudo is passwordless per sudoers.d)
-            echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" \
-              | sudo docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+            # Docker Hub login
+            echo "${{ secrets.DOCKER_HUB_TOKEN }}" \
+              | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
             # Generate .env for docker-compose
             cat > .env <<EOF
@@ -59,9 +59,9 @@ jobs:
             DB_NAME=${{ secrets.DB_NAME }}
             EOF
 
-            # Deploy containers (with sudo)
-            sudo docker-compose pull
-            sudo docker-compose up -d
+            # Deploy containers
+            docker-compose pull
+            docker-compose up -d
 
-            # Reload nginx (also via sudo)
-            sudo nginx -s reload
+            # Reload nginx (no sudo needed after adding user to docker group)
+            nginx -s reload
