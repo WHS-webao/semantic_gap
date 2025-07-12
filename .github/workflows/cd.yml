@@ -44,7 +44,7 @@ jobs:
             fi
 
             # Docker Hub login
-            echo "${{ secrets.DOCKER_HUB_TOKEN }}" \
+            echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" \
               | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
             # Generate .env for docker-compose
