@@ -1,0 +1,63 @@
+# config.template.yml
+
+#######################################################################
+# Wiki.js - CONFIGURATION                                             #
+#######################################################################
+
+# ---------------------------------------------------------------------
+# Port the server should listen to
+# ---------------------------------------------------------------------
+port: ${PORT}
+
+# ---------------------------------------------------------------------
+# Database
+# ---------------------------------------------------------------------
+db:
+  type: ${DB_TYPE:-postgres}
+
+  # PostgreSQL only:
+  host: ${DB_HOST}
+  port: ${DB_PORT}
+  user: ${DB_USER}
+  pass: ${DB_PASS}
+  db:   ${DB_NAME}
+  ssl:  ${SSL_ENABLED:-false}
+
+  sslOptions:
+    auto: true
+    # 다른 옵션들은 필요 시 주석 해제
+
+  schema: public
+  # storage: path/to/database.sqlite    # sqlite 사용 시
+
+#######################################################################
+# ADVANCED OPTIONS                                                    #
+#######################################################################
+
+ssl:
+  enabled: ${SSL_ENABLED:-false}
+  port: ${SSL_PORT:-3443}
+  provider: custom
+  format: pem
+  key:    ${SSL_KEY_PATH:-path/to/key.pem}
+  cert:   ${SSL_CERT_PATH:-path/to/cert.pem}
+  pfx:    ${SSL_PFX_PATH:-path/to/cert.pfx}
+  passphrase: ${SSL_PASSPHRASE:-null}
+  dhparam: ${SSL_DHPARAM:-null}
+  domain: ${SSL_DOMAIN:-wiki.yourdomain.com}
+  subscriberEmail: ${SSL_EMAIL:-admin@example.com}
+
+pool:
+  # min: ${POOL_MIN:-2}
+  # max: ${POOL_MAX:-10}
+
+bindIP: 0.0.0.0
+
+logLevel: ${LOG_LEVEL:-info}
+logFormat: ${LOG_FORMAT:-default}
+
+offline: false
+ha: false
+
+dataPath: ./data
+bodyParserLimit: 5mb
