@@ -77,12 +77,18 @@ jobs:
       - name: Tear down services
         run: docker compose -f docker-compose.ci.yml down --volumes
 
-      - name: Docker Hub login & push
+      - name: Docker Hub login
         run: |
-          echo "${{ env.DOCKER_HUB_TOKEN }}" \
-            | docker login -u "${{ env.DOCKER_HUB_USERNAME }}" --password-stdin
-          IMG=$(docker compose -f docker-compose.ci.yml images -q wiki)
-          docker tag $IMG ${{ env.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }}
-          docker tag $IMG ${{ env.DOCKER_HUB_USERNAME }}/wikijs:latest
-          docker push ${{ env.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }}
-          docker push ${{ env.DOCKER_HUB_USERNAME }}/wikijs:latest
+          echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" \
+            | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+
+      - name: Build & tag Wiki.js Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }} .
+          docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }} \
+                     ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:latest
+
+      - name: Push Wiki.js image
+        run: |
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:latest
