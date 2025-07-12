@@ -1,4 +1,3 @@
-# .github/workflows/cd.yml
 name: CD Deploy to GCP
 
 on:
@@ -33,10 +32,17 @@ jobs:
             echo "${{ secrets.SSL_KEY_B64 }}"  | base64 -d > ~/semantic_gap/ssl/privkey.pem
 
             cd ~
+
             # Clone or update repository
-            if [ -d semantic_gap/.git ]; then
+            if [ -d semantic_gap ]; then
               cd semantic_gap
-              git pull origin main
+              if [ -d .git ]; then
+                git fetch origin main
+                git reset --hard origin/main
+              else
+                rm -rf ./*
+                git clone https://github.com/${{ github.repository }} .
+              fi
             else
               git clone https://github.com/${{ github.repository }} semantic_gap
               cd semantic_gap
