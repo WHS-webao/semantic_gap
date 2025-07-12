@@ -1,4 +1,3 @@
-# .github/workflows/ci.yml
 name: CI Build, Test & Push via Docker Compose
 
 on:
@@ -28,7 +27,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/yarn
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }} 
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
 
       - name: Prepare .env
         run: |
@@ -44,30 +43,43 @@ jobs:
       - name: Prepare data directory
         run: mkdir -p data
 
-      - name: Build & start all services
-        run: docker compose -f docker-compose.ci.yml up -d --build
+      - name: Build images
+        run: docker compose -f docker-compose.ci.yml build
 
-      - name: Debug container status & logs
+      - name: Start only DB
+        run: docker compose -f docker-compose.ci.yml up -d db
+
+      - name: Wait for Postgres to be ready
         run: |
-          echo "=== Services ==="
-          docker compose -f docker-compose.ci.yml ps
-          echo "=== DB logs ==="
-          docker compose -f docker-compose.ci.yml logs db
-          echo "=== Wiki logs ==="
-          docker compose -f docker-compose.ci.yml logs wiki
+          until docker compose -f docker-compose.ci.yml exec db \
+            pg_isready -U "${DB_USER}" > /dev/null 2>&1; do
+            echo "⏱ Waiting for Postgres…"
+            sleep 2
+          done
+
+      - name: Start Wiki.js
+        run: docker compose -f docker-compose.ci.yml up -d wiki
 
       - name: Health-check Wiki.js
         run: |
-          curl --fail http://localhost:3000 \
-            || (docker compose -f docker-compose.ci.yml logs wiki && exit 1)
+          until curl -s http://localhost:3000 > /dev/null; do
+            echo "⏱ Waiting for Wiki.js…"
+            sleep 2
+          done
+
+      - name: Smoke-test API
+        run: curl --fail http://localhost:3000/api/status
 
       - name: Tear down services
         run: docker compose -f docker-compose.ci.yml down --volumes
 
-      - name: Docker Hub login & push
+      - name: Docker Hub login
         run: |
           echo "${{ env.DOCKER_HUB_TOKEN }}" \
             | docker login -u "${{ env.DOCKER_HUB_USERNAME }}" --password-stdin
+
+      - name: Tag & push Wiki.js image
+        run: |
           IMG=$(docker compose -f docker-compose.ci.yml images -q wiki)
           docker tag $IMG ${{ env.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }}
           docker tag $IMG ${{ env.DOCKER_HUB_USERNAME }}/wikijs:latest
