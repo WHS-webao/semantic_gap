@@ -20,16 +20,16 @@ jobs:
       - name: Deploy to GCP VM
         uses: appleboy/ssh-action@v0.1.7
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host:      ${{ secrets.SSH_HOST }}
+          username:  ${{ secrets.SSH_USER }}
+          use_agent: true
           script: |
             set -e
 
             # SSL 파일 준비
             mkdir -p ~/semantic_gap/ssl
             echo "${{ secrets.SSL_CERT_B64 }}" | base64 -d > ~/semantic_gap/ssl/fullchain.pem
-            echo "${{ secrets.SSL_KEY_B64 }}" | base64 -d > ~/semantic_gap/ssl/privkey.pem
+            echo "${{ secrets.SSL_KEY_B64 }}"  | base64 -d > ~/semantic_gap/ssl/privkey.pem
 
             cd ~
 
