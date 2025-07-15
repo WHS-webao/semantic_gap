@@ -26,14 +26,14 @@ jobs:
           script: |
             set -e
 
-            # Prepare SSL directory and files
+            # SSL 파일 준비
             mkdir -p ~/semantic_gap/ssl
             echo "${{ secrets.SSL_CERT_B64 }}" | base64 -d > ~/semantic_gap/ssl/fullchain.pem
             echo "${{ secrets.SSL_KEY_B64 }}"  | base64 -d > ~/semantic_gap/ssl/privkey.pem
 
             cd ~
 
-            # Clone or update repository using GITHUB_TOKEN
+            # 코드 업데이트
             if [ -d semantic_gap ]; then
               cd semantic_gap
               git fetch origin main
@@ -43,25 +43,25 @@ jobs:
               cd semantic_gap
             fi
 
-            # Docker Hub login
+            # Docker Hub 로그인
             echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" \
               | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
-            # Generate .env for docker-compose
-            cat > .env <<EOF
-            DOMAIN=semanticgap.mjsec.kr
-            DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
-            IMAGE_TAG=latest
-            DB_HOST=db
-            DB_PORT=5432
-            DB_USER=${{ secrets.DB_USER }}
-            DB_PASS=${{ secrets.DB_PASS }}
-            DB_NAME=${{ secrets.DB_NAME }}
-            EOF
+            # .env 생성 (공백 없이)
+            cat > .env <<-EOF
+              DOMAIN=semanticgap.mjsec.kr
+              DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
+              IMAGE_TAG=latest
+              DB_HOST=db
+              DB_PORT=5432
+              DB_USER=${{ secrets.DB_USER }}
+              DB_PASS=${{ secrets.DB_PASS }}
+              DB_NAME=${{ secrets.DB_NAME }}
+              EOF
 
-            # Deploy containers
+            # 최신 이미지 내려받아 서비스 재시작
             docker-compose pull
             docker-compose up -d
 
-            # Reload nginx (no sudo needed after adding user to docker group)
+            # Nginx 설정 재로딩
             docker-compose exec nginx nginx -s reload
