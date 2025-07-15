@@ -14,7 +14,7 @@ jobs:
       # Docker Hub
       DOCKER_HUB_USERNAME:   ${{ secrets.DOCKER_HUB_USERNAME }}
       DOCKER_HUB_TOKEN:      ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-      # Wiki.js DB
+      # Wiki.js DB (ci.yml 내부에서는 DB_HOST/DB_PORT를 .env가 담당)
       DB_USER:               ${{ secrets.DB_USER }}
       DB_PASS:               ${{ secrets.DB_PASS }}
       DB_NAME:               ${{ secrets.DB_NAME }}
@@ -32,6 +32,17 @@ jobs:
         with:
           path: ~/.cache/yarn
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Prepare .env for Wiki.js
+        run: |
+          cat > .env <<EOF
+          PORT=3000
+          DB_HOST=db
+          DB_PORT=5432
+          DB_USER=${DB_USER}
+          DB_PASS=${DB_PASS}
+          DB_NAME=${DB_NAME}
+          EOF
 
       - name: Docker Hub login
         run: |
@@ -84,19 +95,19 @@ jobs:
           docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }} \
                      ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:latest
 
-      - name: Push Wiki.js image
+      - name: Push Wiki.js image to Docker Hub
         run: |
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }}
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:latest
 
-      - name: Build & tag frontend image
+      - name: Build & tag Frontend Docker image
         run: |
-          docker tag semantic-gap-ui_frontend:latest \
+          docker tag $(docker compose -f docker-compose.ci.yml ps -q frontend) \
             ${{ secrets.DOCKER_HUB_USERNAME }}/semantic-gap-ui-frontend:${{ github.sha }}
-          docker tag semantic-gap-ui_frontend:latest \
+          docker tag $(docker compose -f docker-compose.ci.yml ps -q frontend) \
             ${{ secrets.DOCKER_HUB_USERNAME }}/semantic-gap-ui-frontend:latest
 
-      - name: Push frontend image
+      - name: Push Frontend image to Docker Hub
         run: |
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/semantic-gap-ui-frontend:${{ github.sha }}
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/semantic-gap-ui-frontend:latest
