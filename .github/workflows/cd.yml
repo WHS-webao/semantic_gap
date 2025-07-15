@@ -49,16 +49,16 @@ jobs:
 
             # .env 생성 (공백 없이, PORT=3000 포함)
             cat > .env <<-EOF
-DOMAIN=semanticgap.mjsec.kr
-PORT=3000
-DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
-IMAGE_TAG=latest
-DB_HOST=db
-DB_PORT=5432
-DB_USER=${{ secrets.DB_USER }}
-DB_PASS=${{ secrets.DB_PASS }}
-DB_NAME=${{ secrets.DB_NAME }}
-EOF
+            DOMAIN=semanticgap.mjsec.kr
+            PORT=3000
+            DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
+            IMAGE_TAG=latest
+            DB_HOST=db
+            DB_PORT=5432
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASS=${{ secrets.DB_PASS }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            EOF
 
             # 최신 이미지 내려받아 서비스 재시작
             docker-compose pull
