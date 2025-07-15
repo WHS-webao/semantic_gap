@@ -11,14 +11,11 @@ jobs:
   build-test-and-push:
     runs-on: ubuntu-latest
     env:
-      # Docker Hub
       DOCKER_HUB_USERNAME:   ${{ secrets.DOCKER_HUB_USERNAME }}
       DOCKER_HUB_TOKEN:      ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-      # Wiki.js DB (ci.yml 내부에서는 DB_HOST/DB_PORT를 .env가 담당)
       DB_USER:               ${{ secrets.DB_USER }}
       DB_PASS:               ${{ secrets.DB_PASS }}
       DB_NAME:               ${{ secrets.DB_NAME }}
-      # React 빌드 시 주입할 env
       REACT_APP_GRAPHQL_URL: ${{ secrets.REACT_APP_GRAPHQL_URL }}
       REACT_APP_BASE_URL:    ${{ secrets.REACT_APP_BASE_URL }}
       REACT_APP_TOKEN:       ${{ secrets.REACT_APP_TOKEN }}
@@ -49,12 +46,9 @@ jobs:
           echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" \
             | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
-      - name: Build all images (frontend, db, wiki)
+      - name: Build all images
         run: |
-          docker compose -f docker-compose.ci.yml build \
-            --build-arg REACT_APP_GRAPHQL_URL=${REACT_APP_GRAPHQL_URL} \
-            --build-arg REACT_APP_BASE_URL=${REACT_APP_BASE_URL} \
-            --build-arg REACT_APP_TOKEN=${REACT_APP_TOKEN}
+          docker compose -f docker-compose.ci.yml build
 
       - name: Start only DB
         run: docker compose -f docker-compose.ci.yml up -d db
@@ -89,25 +83,17 @@ jobs:
       - name: Tear down CI services
         run: docker compose -f docker-compose.ci.yml down --volumes
 
-      - name: Build & tag Wiki.js Docker image
+      - name: Build & tag Wiki.js image
         run: |
           docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }} .
           docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }} \
                      ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:latest
 
-      - name: Push Wiki.js image to Docker Hub
+      - name: Push Wiki.js image
         run: |
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }}
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:latest
 
-      - name: Build & tag Frontend Docker image
+      - name: Push Frontend image
         run: |
-          docker tag $(docker compose -f docker-compose.ci.yml ps -q frontend) \
-            ${{ secrets.DOCKER_HUB_USERNAME }}/semantic-gap-ui-frontend:${{ github.sha }}
-          docker tag $(docker compose -f docker-compose.ci.yml ps -q frontend) \
-            ${{ secrets.DOCKER_HUB_USERNAME }}/semantic-gap-ui-frontend:latest
-
-      - name: Push Frontend image to Docker Hub
-        run: |
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/semantic-gap-ui-frontend:${{ github.sha }}
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/semantic-gap-ui-frontend:latest
