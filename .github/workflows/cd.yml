@@ -43,7 +43,7 @@ jobs:
             echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
             
             # Generate .env for docker-compose
-            cat > .env << 'EOF'
+            cat > .env << EOF
             PORT=3000
             DOMAIN=semanticgap.mjsec.kr
             DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
