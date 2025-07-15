@@ -1,3 +1,5 @@
+
+
 services:
   db:
     image: postgres:17-alpine
@@ -5,35 +7,45 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_DB:     ${DB_NAME}
-      POSTGRES_USER:   ${DB_USER}
+      POSTGRES_DB:       ${DB_NAME}
+      POSTGRES_USER:     ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
     volumes:
       - db-data:/var/lib/postgresql/data
 
   wiki:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        DATA_PATH: ${DATA_PATH:-/usr/src/wiki/data}
     image: "${DOCKER_HUB_USERNAME}/wikijs:${IMAGE_TAG:-latest}"
     restart: unless-stopped
     depends_on:
       - db
     env_file:
       - .env
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./custom:/usr/src/wiki/custom
-      - wiki-data:${DATA_PATH:-/usr/src/wiki/data}
+    environment:
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+
+  frontend:
+    image: "${DOCKER_HUB_USERNAME}/semantic-gap-ui-frontend:${IMAGE_TAG:-latest}"
+    restart: unless-stopped
+    # React 정적파일은 80 포트에서 Nginx로 서빙
+    expose:
+      - "80"
+    # (필요시) 환경변수를 컨테이너 내부에 제공
+    environment:
+      REACT_APP_BASE_URL:    ${REACT_APP_BASE_URL}
+      REACT_APP_GRAPHQL_URL: ${REACT_APP_GRAPHQL_URL}
+      REACT_APP_TOKEN:       ${REACT_APP_TOKEN}
 
   nginx:
     image: nginx:latest
     restart: unless-stopped
+    user: root
     depends_on:
       - wiki
+      - frontend
     ports:
       - "80:80"
       - "443:443"
@@ -44,4 +56,3 @@ services:
 
 volumes:
   db-data:
-  wiki-data:

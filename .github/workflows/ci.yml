@@ -11,11 +11,14 @@ jobs:
   build-test-and-push:
     runs-on: ubuntu-latest
     env:
-      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-      DOCKER_HUB_TOKEN:    ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-      DB_USER:              ${{ secrets.DB_USER }}
-      DB_PASS:              ${{ secrets.DB_PASS }}
-      DB_NAME:              ${{ secrets.DB_NAME }}
+      DOCKER_HUB_USERNAME:   ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_TOKEN:      ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      DB_USER:               ${{ secrets.DB_USER }}
+      DB_PASS:               ${{ secrets.DB_PASS }}
+      DB_NAME:               ${{ secrets.DB_NAME }}
+      REACT_APP_GRAPHQL_URL: ${{ secrets.REACT_APP_GRAPHQL_URL }}
+      REACT_APP_BASE_URL:    ${{ secrets.REACT_APP_BASE_URL }}
+      REACT_APP_TOKEN:       ${{ secrets.REACT_APP_TOKEN }}
 
     steps:
       - name: Checkout repository
@@ -27,7 +30,7 @@ jobs:
           path: ~/.cache/yarn
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
 
-      - name: Prepare .env
+      - name: Prepare .env for Wiki.js
         run: |
           cat > .env <<EOF
           PORT=3000
@@ -38,11 +41,14 @@ jobs:
           DB_NAME=${DB_NAME}
           EOF
 
-      - name: Prepare data directory
-        run: mkdir -p data
+      - name: Docker Hub login
+        run: |
+          echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" \
+            | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
-      - name: Build images
-        run: docker compose -f docker-compose.ci.yml build
+      - name: Build all images
+        run: |
+          docker compose -f docker-compose.ci.yml build
 
       - name: Start only DB
         run: docker compose -f docker-compose.ci.yml up -d db
@@ -64,25 +70,20 @@ jobs:
           docker compose -f docker-compose.ci.yml exec wiki \
             sh -c "cat /usr/src/wiki/config.yml"
 
-      - name: Health-check Wiki.js
+      - name: Health‑check Wiki.js
         run: |
           until curl -s http://localhost:3000 > /dev/null; do
             echo "⏱ Waiting for Wiki.js…"
             sleep 2
           done
 
-      - name: Smoke-test API
+      - name: Smoke‑test Wiki.js API
         run: curl --fail http://localhost:3000/api/status
 
-      - name: Tear down services
+      - name: Tear down CI services
         run: docker compose -f docker-compose.ci.yml down --volumes
 
-      - name: Docker Hub login
-        run: |
-          echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" \
-            | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
-
-      - name: Build & tag Wiki.js Docker image
+      - name: Build & tag Wiki.js image
         run: |
           docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }} .
           docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }} \
@@ -92,3 +93,7 @@ jobs:
         run: |
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:${{ github.sha }}
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/wikijs:latest
+
+      - name: Push Frontend image
+        run: |
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/semantic-gap-ui-frontend:latest

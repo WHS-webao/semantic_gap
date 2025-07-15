@@ -33,33 +33,35 @@ jobs:
 
             cd ~
 
-            # Clone or update repository
+            # Clone or update repository using GITHUB_TOKEN
             if [ -d semantic_gap ]; then
               cd semantic_gap
-              if [ -d .git ]; then
-                git fetch origin main
-                git reset --hard origin/main
-              else
-                rm -rf ./*
-                git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} .
-              fi
+              git fetch origin main
+              git reset --hard origin/main
             else
-              git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} semantic_gap
+              git clone https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} semantic_gap
               cd semantic_gap
             fi
 
-            # Docker Hub login (with sudo)
-            echo "${{ secrets.DOCKER_HUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+            # Docker Hub login
+            echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" \
+              | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
             # Generate .env for docker-compose
             cat > .env <<EOF
             DOMAIN=semanticgap.mjsec.kr
             DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
             IMAGE_TAG=latest
+            DB_HOST=db
+            DB_PORT=5432
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASS=${{ secrets.DB_PASS }}
+            DB_NAME=${{ secrets.DB_NAME }}
             EOF
 
-            # Deploy containers (with sudo)
-            sudo docker-compose pull
-            sudo docker-compose up -d
+            # Deploy containers
+            docker-compose pull
+            docker-compose up -d
 
-            # Reload nginx
+            # Reload nginx (no sudo needed after adding user to docker group)
+            docker-compose exec nginx nginx -s reload
