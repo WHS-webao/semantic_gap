@@ -1,3 +1,5 @@
+
+
 services:
   db:
     image: postgres:17-alpine
@@ -14,16 +16,32 @@ services:
       retries: 15
 
   wiki:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     env_file:
       - .env
     environment:
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_USER=${DB_USER}
-      - DB_PASS=${DB_PASS}
-      - DB_NAME=${DB_NAME}
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
     volumes:
       - ./data:/usr/src/wiki/data
     ports:
       - "3000:3000"
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        REACT_APP_GRAPHQL_URL: ${REACT_APP_GRAPHQL_URL}
+        REACT_APP_BASE_URL:    ${REACT_APP_BASE_URL}
+        REACT_APP_TOKEN:       ${REACT_APP_TOKEN}
+    image: "${DOCKER_HUB_USERNAME}/semantic-gap-ui-frontend:latest"
+    ports:
+      - "8080:80"
