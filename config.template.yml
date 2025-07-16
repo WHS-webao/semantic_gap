@@ -1,8 +1,17 @@
+# 1) 포트 설정
 port: ${PORT}
 
-app:
-  url: https://${DOMAIN}/wiki   # ← 여기에 /wiki 서브패스를 지정
+# 2) 서버 설정: /wiki 서브패스로 동작하도록 지정
+server:
+  host: 0.0.0.0
+  port: ${PORT}
+  path: /wiki        
 
+# 3) 클라이언트 쪽 URL 생성용
+app:
+  url: https://${DOMAIN}/wiki
+
+# 4) 데이터베이스 설정
 db:
   type: postgres
   host: ${DB_HOST}
@@ -12,5 +21,7 @@ db:
   db:   ${DB_NAME}
   ssl:  false
 
+# 5) 그 외 기본 설정
 bindIP: 0.0.0.0
 logLevel: info
+dataPath: ./data
