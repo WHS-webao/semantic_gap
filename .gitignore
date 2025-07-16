@@ -2,6 +2,7 @@
 logs
 *.log
 /logs
+.env
 
 # Deployment builds
 dist
