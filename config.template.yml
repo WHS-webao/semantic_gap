@@ -5,7 +5,9 @@ port: ${PORT}
 server:
   host: 0.0.0.0
   port: ${PORT}
-  path: /wiki        
+  reverseProxy:
+    enabled: true
+    prefix: /wiki       
 
 # 3) 클라이언트 쪽 URL 생성용
 app:
