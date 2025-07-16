@@ -24,12 +24,16 @@ services:
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
       DB_NAME: ${DB_NAME}
+    ports:
+      - "3000:3000"    # 호스트 3000 → 컨테이너 3000
 
   frontend:
     image: "${DOCKER_HUB_USERNAME}/semantic-gap-ui-frontend:${IMAGE_TAG:-latest}"
     restart: unless-stopped
     expose:
       - "80"
+    ports:
+      - "80:80"       # 호스트 80 → 컨테이너 80
 
   nginx:
     image: nginx:latest
