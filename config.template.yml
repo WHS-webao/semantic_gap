@@ -1,5 +1,8 @@
 port: ${PORT}
 
+app:
+  url: https://${DOMAIN}/wiki   # ← 여기에 /wiki 서브패스를 지정
+
 db:
   type: postgres
   host: ${DB_HOST}
@@ -11,4 +14,3 @@ db:
 
 bindIP: 0.0.0.0
 logLevel: info
-dataPath: ./data
