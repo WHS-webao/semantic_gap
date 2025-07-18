@@ -46,6 +46,7 @@ jobs:
             cat > .env << EOF
             PORT=3000
             DOMAIN=semanticgap.mjsec.kr
+
             DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
             IMAGE_TAG=latest
             DB_HOST=db
@@ -54,8 +55,7 @@ jobs:
             DB_PASS=${{ secrets.DB_PASS }}
             DB_NAME=${{ secrets.DB_NAME }}
             EOF
-            
-            # Deploy containers
+
             docker-compose pull
             docker-compose up -d
             
