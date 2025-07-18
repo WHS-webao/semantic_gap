@@ -12,28 +12,24 @@ jobs:
       - name: Checkout (for context)
         uses: actions/checkout@v4
 
-      - name: Setup SSH key in agent
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
       - name: Deploy to GCP VM
         uses: appleboy/ssh-action@v0.1.7
         with:
-          host:     ${{ secrets.SSH_HOST }}
+          host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key:      ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
             set -e
-
-            # SSL 파일 준비
+            
+            # Prepare SSL directory and files
             mkdir -p ~/semantic_gap/ssl
             echo "${{ secrets.SSL_CERT_B64 }}" | base64 -d > ~/semantic_gap/ssl/fullchain.pem
-            echo "${{ secrets.SSL_KEY_B64 }}"  | base64 -d > ~/semantic_gap/ssl/privkey.pem
-
+            echo "${{ secrets.SSL_KEY_B64 }}" | base64 -d > ~/semantic_gap/ssl/privkey.pem
+            
             cd ~
-
-            # 코드 업데이트
+            
+            # Clone or update repository using GITHUB_TOKEN
             if [ -d semantic_gap ]; then
               cd semantic_gap
               git fetch origin main
@@ -42,15 +38,15 @@ jobs:
               git clone https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} semantic_gap
               cd semantic_gap
             fi
-
-            # Docker Hub 로그인
-            echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" \
-              | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
-
-            # .env 생성 (공백 없이, PORT=3000 포함)
-            cat > .env <<-EOF
-            DOMAIN=semanticgap.mjsec.kr
+            
+            # Docker Hub login
+            echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+            
+            # Generate .env for docker-compose
+            cat > .env << EOF
             PORT=3000
+            DOMAIN=semanticgap.mjsec.kr
+
             DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
             IMAGE_TAG=latest
             DB_HOST=db
@@ -60,9 +56,15 @@ jobs:
             DB_NAME=${{ secrets.DB_NAME }}
             EOF
 
-            # 최신 이미지 내려받아 서비스 재시작
             docker-compose pull
             docker-compose up -d
-
-            # Nginx 설정 재로딩
-            docker-compose exec nginx nginx -s reload
+            
+            # Wait for containers to start
+            sleep 10
+            
+            # Reload nginx (check if container is running first)
+            if docker-compose ps nginx | grep -q "Up"; then
+              docker-compose exec nginx nginx -s reload
+            else
+              echo "Nginx container is not running, skipping reload"
+            fi
