@@ -13,7 +13,7 @@ FROM node:18-alpine
 WORKDIR /usr/src/wiki
 
 RUN apk add --no-cache gettext
-
+ENV NODE_ENV=production
 COPY --from=builder /usr/src/wiki/ .
 
 ENTRYPOINT [ "sh", "-c", \

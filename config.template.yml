@@ -1,5 +1,13 @@
 port: ${PORT}
 
+server:
+  host: 0.0.0.0
+  port: ${PORT}
+  path: ${WIKI_PATH}        # → /wiki
+
+app:
+  url: https://${DOMAIN}${WIKI_PATH}
+
 db:
   type: postgres
   host: ${DB_HOST}
@@ -11,4 +19,5 @@ db:
 
 bindIP: 0.0.0.0
 logLevel: info
+devMode: false
 dataPath: ./data
