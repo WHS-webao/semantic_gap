@@ -1,7 +1,11 @@
 .App {
   text-align: center;
+  background: #000;
+  padding: 0.5rem 0;
+  color: #fff;
 }
 .header-container {
+  background: #000;
   display: flex;
   justify-content: center;
   /* 필요하다면 너비 지정 가능 */
@@ -11,6 +15,7 @@
 
 .header-container h1 {
   margin: 0;
+  
 }
 .App-logo {
   height: 40vmin;
@@ -31,10 +36,25 @@
   align-items: center;
   justify-content: center;
   font-size: calc(10px + 2vmin);
-  color: white;
+  color: rgb(0, 0, 0);
+  font-weight: bold;
 }
 .App-link {
-  color: #61dafb;
+  color: inherit;        /* 부모 텍스트 색상(흰색)을 물려받도록 */
+  text-decoration: none; /* 밑줄 제거 */
+}
+/* ─────────────────────
+   Semantic Gap 카드 헤더(<a>) 스타일
+───────────────────── */
+.main-title a,
+.main-title a:link,
+.main-title a:visited {
+  color: #000000;           /* 흰색 타이틀 글자 */
+  text-decoration: none; /* 밑줄 제거 */
+}
+.main-title a:hover,
+.main-title a:active {
+  opacity: 0.85;         /* hover 시 살짝 투명도 조정 (선택) */
 }
 
 @keyframes App-logo-spin {
@@ -45,3 +65,5 @@
     transform: rotate(360deg);
   }
 }
+
+
