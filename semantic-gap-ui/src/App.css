@@ -1,8 +1,10 @@
 .App {
   text-align: center;
-  background: #000;
+  background: #F2F2F2;
   padding: 0.5rem 0;
   color: #fff;
+  padding-top: 4rem;
+
 }
 .header-container {
   background: #000;
