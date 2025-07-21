@@ -25,7 +25,6 @@ header h1 {
   padding: 2rem clamp(0.5rem, 4vw, 3rem);
   display: grid;
   gap: 1.5rem;
-
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
@@ -36,7 +35,7 @@ header h1 {
 
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: #5b66ad;
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 4px 10px rgba(0,0,0,.06);
@@ -65,9 +64,10 @@ header h1 {
   flex: 1;
   padding: 1rem;
   display: flex;
+   border-radius: 14px 14px 14px 14px;
   flex-direction: column;
   gap: 1.25rem;
-  background: #fafafa;
+  background: #fff;    /* 본문은 카드와 동일한 흰색 배경 */
   overflow-y: auto;
 }
 

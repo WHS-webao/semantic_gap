@@ -1,15 +1,19 @@
-FROM node:16-alpine AS builder
+FROM node:18-alpine AS frontend-builder
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci --production
+# 1) 패키지 메타만 복사
+COPY semantic-gap-ui/package.json semantic-gap-ui/package-lock.json ./
 
-COPY . .
+# 2) production + devDeps 모두 설치
+RUN npm install
+
+# 3) 소스 복사 & 빌드
+COPY semantic-gap-ui ./
 RUN npm run build
 
+# ───────── NGINX Serving ─────────
 FROM nginx:stable-alpine
-
-COPY --from=builder /app/build /usr/share/nginx/html
+COPY --from=frontend-builder /app/build /usr/share/nginx/html
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
