@@ -1,14 +1,17 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm install --production
 
-# 3) 나머지 복사 & 빌드
+COPY package.json package-lock.json ./
+
+
+RUN npm install
+
+# 4) 소스 복사 & 빌드
 COPY . .
 RUN npm run build
 
-# 4) nginx 에 결과 복사
+# 5) Nginx 에 빌드 결과물 복사
 FROM nginx:stable-alpine
 COPY --from=builder /app/build /usr/share/nginx/html
 
