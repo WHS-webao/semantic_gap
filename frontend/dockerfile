@@ -1,14 +1,15 @@
 # frontend/Dockerfile
+
 # ── 1) React 빌드 스테이지 ───────────────────────────
-FROM node:16-alpine AS builder
+FROM node:18-alpine AS builder
 WORKDIR /app
 
-# 1‑1) 의존성 설치
+# 1‑1) 의존성 설치 (lockfile mismatch 무시)
 COPY semantic-gap-ui/package*.json ./
-RUN npm ci
+RUN npm install --production
 
 # 1‑2) 소스 복사 + 빌드 환경변수 주입
-COPY semantic-gap-ui .
+COPY semantic-gap-ui ./
 ARG REACT_APP_GRAPHQL_URL
 ARG REACT_APP_BASE_URL
 ARG REACT_APP_TOKEN
@@ -21,9 +22,11 @@ RUN npm run build
 
 # ── 2) Nginx 서빙 스테이지 ──────────────────────────
 FROM nginx:stable-alpine
+
 # React 정적 파일 복사
 COPY --from=builder /app/build /usr/share/nginx/html
-# 전용 Nginx 설정 복사 ─
+
+# 전용 Nginx 설정 복사
 COPY nginx/frontend.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
